@@ -171,7 +171,7 @@
             }
         }
 
-        protected void CheckTableParameters(TemplateTableParameter table, Dictionary<string, object> parameters, string message)
+        protected void CheckTableParameters(TemplateTableParameter table, Dictionary<string, object> parameters, ref string message)
         {
             if (!parameters.ContainsKey(table.Name))
             {
@@ -201,7 +201,7 @@
             {
                 foreach (var tparam in curTableParameter)
                 {
-                    CheckTableParameters(param, tparam, message);
+                    CheckTableParameters(param, tparam, ref message);
                 }
             }
         }
@@ -225,7 +225,7 @@
                 {
                     foreach (TemplateTableParameter table in templateTableParameters)
                     {
-                        CheckTableParameters(table, parameters, result);
+                        CheckTableParameters(table, parameters, ref result);
 
                         var rows = parameters.ContainsKey(table.Name)
                                        ? (List<Dictionary<string, object>>)parameters[table.Name]
