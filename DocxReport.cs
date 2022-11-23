@@ -21,15 +21,15 @@
     {
         public readonly string NewLine = Environment.NewLine;
 
-        private WmlDocument templateDoc;
+        private readonly WmlDocument templateDoc;
 
         private readonly List<Source> resultDocs = new List<Source>();
 
         private readonly List<TemplateParameter> templateParameters = new List<TemplateParameter>();
 
-        private List<TemplateTableParameter> templateTableParameters = new List<TemplateTableParameter>();
-
         private readonly List<TemplateImageParameter> templateImageParameters = new List<TemplateImageParameter>();
+
+        private readonly List<TemplateTableParameter> templateTableParameters;
 
         /// <summary>
         /// Найти все параметры в по указанному паттерну в тексте
@@ -88,12 +88,10 @@
             }
 
             // формируем шаблоны - рисунки
-            foreach (var bookMark in mainPart.RootElement.Descendants<BookmarkStart>())
+            var allBookmarks = mainPart.RootElement.Descendants<BookmarkStart>();
+            foreach (var bookMark in allBookmarks.Where(b => b.Name.ToString().StartsWith(TemplateImageParameter.ImgBookmarkPrefix)))
             {
-                if (bookMark.Name.ToString().StartsWith(TemplateImageParameter.ImgBookmarkPrefix))
-                {
-                    templateImageParameters.Add(new TemplateImageParameter(bookMark.Name));
-                }
+                templateImageParameters.Add(new TemplateImageParameter(bookMark.Name));
             }
 
             templateDoc = new WmlDocument(templateFilePath);
