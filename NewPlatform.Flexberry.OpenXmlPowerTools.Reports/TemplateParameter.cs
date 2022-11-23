@@ -8,7 +8,7 @@
     /// </summary>
     public class TemplateParameter
     {
-        private string format;
+        private readonly string format;
 
         public TemplateParameter(string fullName)
         {
@@ -40,7 +40,7 @@
 
         public string FullName { get; private set; }
 
-        internal string FormatObject(object dataObject)
+        public string FormatObject(object dataObject)
         {
             return string.Format(format, dataObject);
         }

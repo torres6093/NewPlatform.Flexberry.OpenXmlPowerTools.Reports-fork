@@ -42,6 +42,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         shell: powershell
         run: |
-          .\.sonar\scanner\dotnet-sonarscanner begin /k:"Flexberry_NewPlatform.Flexberry.OpenXmlPowerTools.Reports" /o:"flexberry" /d:sonar.login="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io"
-          dotnet build
+          .\.sonar\scanner\dotnet-sonarscanner begin /k:"Flexberry_NewPlatform.Flexberry.OpenXmlPowerTools.Reports" /o:"flexberry" /d:sonar.cs.opencover.reportsPaths=TestResult/**/coverage.opencover.xml /d:sonar.login="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io"
+          dotnet build --no-incremental
+          dotnet test --no-build --collect:"XPlat Code Coverage" --settings=coverlet.runsettings -r ./TestResult/
           .\.sonar\scanner\dotnet-sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"

@@ -11,7 +11,7 @@
     using DocumentFormat.OpenXml.Drawing;
     using DocumentFormat.OpenXml.Packaging;
     using DocumentFormat.OpenXml.Wordprocessing;
-    using global::OpenXmlPowerTools;
+    using OpenXmlPowerTools;
     using DW = DocumentFormat.OpenXml.Drawing.Wordprocessing;
     using Paragraph = DocumentFormat.OpenXml.Wordprocessing.Paragraph;
     using PIC = DocumentFormat.OpenXml.Drawing.Pictures;
@@ -124,56 +124,62 @@
             {
                 if (inputParameters.ContainsKey(templateParameter.Name))
                 {
+                    object inputParameterValue = inputParameters[templateParameter.Name];
                     replace.Add(
-                        "[" + templateParameter.FullName + "]", templateParameter.FormatObject(inputParameters[templateParameter.Name]));
+                        $"[{templateParameter.FullName}]",
+                        templateParameter.FormatObject(inputParameterValue));
                     continue;
                 }
 
                 // Может быть идет значение какого-либо поля параметра
                 var parameterName = templateParameter.Name;
-                if (parameterName.Contains("."))
+                if (!parameterName.Contains("."))
                 {
-                    var objectName = parameterName.Substring(0, parameterName.IndexOf("."));
-
-                    // если такого параметра нет значит пользователь скармливает сайту какую-то фигню, игнорируем его
-                    if (!inputParameters.ContainsKey(objectName))
-                    {
-                        continue;
-                    }
-
-                    object dataObject = inputParameters[objectName];
-
-                    // ковыряем значения полей через reflection
-                    var fieldName = parameterName.Remove(0, objectName.Length + 1);
-
-                    // пользователь опять может подсунуть какую-нибудь гадость
-                    while (fieldName.Contains(".") && dataObject != null)
-                    {
-                        objectName = fieldName.Substring(0, fieldName.IndexOf("."));
-                        dataObject = GetFieldValueWithReflection(dataObject, objectName);
-
-                        fieldName = fieldName.Remove(0, objectName.Length + 1);
-                    }
-
-                    if (dataObject != null)
-                    {
-                        var fieldValue = GetFieldValueWithReflection(dataObject, fieldName);
-                        replace.Add("[" + templateParameter.FullName + "]", templateParameter.FormatObject(fieldValue));
-                    }
-                    else
-                    {
-                        replace.Add("[" + templateParameter.FullName + "]", string.Empty);
-                    }
+                    continue;
                 }
+
+                var objectName = parameterName.Substring(0, parameterName.IndexOf("."));
+
+                // если такого параметра нет значит пользователь скармливает сайту какую-то фигню, игнорируем его
+                if (!inputParameters.ContainsKey(objectName))
+                {
+                    continue;
+                }
+
+                object dataObject = inputParameters[objectName];
+
+                // ковыряем значения полей через reflection
+                var fieldName = parameterName.Remove(0, objectName.Length + 1);
+
+                while (fieldName.Contains(".") && dataObject != null)
+                {
+                    objectName = fieldName.Substring(0, fieldName.IndexOf("."));
+                    dataObject = GetFieldValueWithReflection(dataObject, objectName);
+
+                    fieldName = fieldName.Remove(0, objectName.Length + 1);
+                }
+
+                if (dataObject != null)
+                {
+                    var fieldValue = GetFieldValueWithReflection(dataObject, fieldName);
+                    replace.Add($"[{templateParameter.FullName}]", templateParameter.FormatObject(fieldValue));
+                    continue;
+                }
+
+                // Сам параметр валидный, но в объектных свойствах где-то null, сделаем замену на пустую строку
+                replace.Add($"[{templateParameter.FullName}]", string.Empty);
             }
         }
 
-        protected void CheckTableParameters(TemplateTableParameter table, Dictionary<string, object> parameters, ref string message)
+        protected void CheckTableParameters(TemplateTableParameter table, Dictionary<string, object> parameters, string message)
         {
             if (!parameters.ContainsKey(table.Name))
             {
-                var r = string.Format("Не найден табличный параметр {0}; ", table.Name);
-                if (!message.Contains(r)) message += r;
+                var notFoundTableParameter = $"Не найден табличный параметр {table.Name}; ";
+                if (!message.Contains(notFoundTableParameter))
+                {
+                    message += notFoundTableParameter;
+                }
                 return;
             }
 
@@ -183,8 +189,11 @@
             {
                 if (curTableParameter.Any(row => !row.ContainsKey(param.Name)))
                 {
-                    var r = string.Format("Не найден параметр {0} табличного параметра {1}; ", param.Name, table.Name);
-                    if (!message.Contains(r)) message += r;
+                    var notFoundParameterMessage = $"Не найден параметр {param.Name} табличного параметра {table.Name}; ";
+                    if (!message.Contains(notFoundParameterMessage))
+                    {
+                        message += notFoundParameterMessage;
+                    }
                 }
             }
 
@@ -192,7 +201,7 @@
             {
                 foreach (var tparam in curTableParameter)
                 {
-                    CheckTableParameters(param, tparam, ref message);
+                    CheckTableParameters(param, tparam, message);
                 }
             }
         }
@@ -204,7 +213,8 @@
 
             FormReplaceByExistsParameters(parameters, replace);
 
-            var result = templateParameters.Where(parameter => !replace.ContainsKey("[" + parameter.FullName + "]")).Aggregate(string.Empty, (current, parameter) => current + string.Format("Не найден параметр {0}; ", parameter.Name));
+            var result = templateParameters.Where(parameter => !replace.ContainsKey("[" + parameter.FullName + "]"))
+                .Aggregate(string.Empty, (current, parameter) => current + string.Format("Не найден параметр {0}; ", parameter.Name));
 
             // создаем документ на основе шаблона
             WmlDocument wmlDoc;
@@ -215,7 +225,7 @@
                 {
                     foreach (TemplateTableParameter table in templateTableParameters)
                     {
-                        CheckTableParameters(table, parameters, ref result);
+                        CheckTableParameters(table, parameters, result);
 
                         var rows = parameters.ContainsKey(table.Name)
                                        ? (List<Dictionary<string, object>>)parameters[table.Name]
@@ -227,15 +237,12 @@
 
                     // с закладками оказалось неудобно в случаях, когда необходимо вставить картинку в табличный параметр - закладки не копируются
                     // оставили этот код для совместимости
-                    foreach (var templateImageParameter in templateImageParameters)
+                    foreach (var templateImageParameter in templateImageParameters.Where(imageParameter => parameters.ContainsKey(imageParameter.Name)))
                     {
-                        if (parameters.ContainsKey(templateImageParameter.Name))
+                        var images = (List<ImageParameter>)parameters[templateImageParameter.Name];
+                        foreach (var image in images)
                         {
-                            var images = (List<ImageParameter>)parameters[templateImageParameter.Name];
-                            foreach (var image in images)
-                            {
-                                InsertAPicture(document, image, templateImageParameter.FullName);
-                            }
+                            InsertAPicture(document, image, templateImageParameter.FullName);
                         }
                     }
 
