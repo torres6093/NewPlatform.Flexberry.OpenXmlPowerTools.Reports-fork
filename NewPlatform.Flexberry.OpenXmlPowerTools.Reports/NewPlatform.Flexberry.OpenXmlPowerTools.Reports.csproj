@@ -1,7 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <Description>Flexberry OpenXmlPowerTools Reports package.</Description>
+    <Title>Flexberry OpenXmlPowerTools Reports</Title>
+    <PackageTags>Flexberry OpenXmlPowerTools Reports</PackageTags>
+    <Product>NewPlatform.Flexberry.OpenXmlPowerTools.Reports</Product>
+    <PackageId>NewPlatform.Flexberry.OpenXmlPowerTools.Reports</PackageId>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <RootNamespace>NewPlatform.Flexberry.Reports</RootNamespace>
+    <AssemblyName>NewPlatform.Flexberry.OpenXmlPowerTools.Reports</AssemblyName>
+    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
+    <AssemblyVersion>1.0.0.1</AssemblyVersion>
+    <FileVersion>1.0.0.1</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
