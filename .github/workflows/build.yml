@@ -1,8 +1,9 @@
-name: CI
+name: Dotnet-build-test
 on:
   push:
-    branches:
-      - feature-231773-issue-templates
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
@@ -15,7 +16,7 @@ jobs:
       - name: git-checkout
         uses: actions/checkout@v3
       
-      - name: Install dotnet
+      - name: Dotnet Install
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '${{ matrix.dotnet-version }}'
@@ -23,8 +24,8 @@ jobs:
       - name: Install Dependencies
         run: dotnet restore
       
-      - name: Build
-        run: dotnet build
+      - name: Dotnet Build
+        run: dotnet build --no-restore
       
       - name: Test
         run: dotnet test --logger trx --results-directory "TestResults-${{ matrix.dotnet-version }}"
